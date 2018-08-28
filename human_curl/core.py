@@ -16,10 +16,10 @@ from os.path import exists as file_exists
 from logging import getLogger
 from re import compile as re_compile
 from string import capwords
-from urllib import urlencode, quote_plus
-from cookielib import CookieJar
+from urllib.parse import urlencode, quote_plus
+from http.cookiejar import CookieJar
 from itertools import chain
-from urlparse import urlparse, urljoin, urlunparse, parse_qsl
+from urllib.parse import urlparse, urljoin, urlunparse, parse_qsl
 from types import (StringTypes, TupleType, DictType, NoneType,
                    ListType, FunctionType)
 
@@ -37,7 +37,7 @@ from .utils import (decode_gzip, CaseInsensitiveDict, to_cookiejar,
                     to_unicode, logger_debug, urlnoencode)
 
 
-from StringIO import StringIO
+from io import StringIO
 
 try:
     import platform
@@ -62,7 +62,7 @@ HTTP_GENERAL_RESPONSE_HEADER = re_compile(r"(?P<version>HTTP\/.*?)\s+(?P<code>\d
 
 try:
     CURL_VERSION = PYCURL_VERSION_INFO[1]
-except IndexError, e:
+except IndexError as e:
     CURL_VERSION = ""
     logger.warn("Unknown pycURL / cURL version")
 
@@ -349,7 +349,7 @@ class Request(object):
             opener.perform()
             # if close before getinfo, raises pycurl.error can't invote getinfo()
             # opener.close()
-        except pycurl.error, e:
+        except pycurl.error as e:
             raise CurlError(e[0], e[1])
         else:
             self.response = self.make_response()
@@ -367,7 +367,7 @@ class Request(object):
                             cookies=self._cookies)
         try:
             response.parse_cookies()
-        except Exception, e:
+        except Exception as e:
             logger.error(e, exc_info=True)
         return response
 
@@ -439,9 +439,9 @@ class Request(object):
         if self._headers:
             logger.debug("Setup custom headers %s" %
                          "\r\n".join(["%s: %s" % (f, v) for f, v
-                                      in CaseInsensitiveDict(self._headers).iteritems()]))
+                                      in CaseInsensitiveDict(self._headers).items()]))
             opener.setopt(pycurl.HTTPHEADER, ["%s: %s" % (capwords(f, "-"), v) for f, v
-                                              in CaseInsensitiveDict(self._headers).iteritems()])
+                                              in CaseInsensitiveDict(self._headers).items()])
 
         # Option -L  Follow  "Location: "  hints
         if self._allow_redirects is True:
@@ -560,7 +560,7 @@ class Request(object):
             "HEAD": pycurl.NOBODY}
 
         logger.debug("Use method %s for request" % self._method)
-        if self._method in curl_options.values():
+        if self._method in list(curl_options.values()):
             opener.setopt(curl_options[self._method], True)
         elif self._method in self.SUPPORTED_METHODS:
             opener.setopt(pycurl.CUSTOMREQUEST, self._method)
@@ -696,10 +696,10 @@ class Response(object):
         """Extract info from `self._curl_opener` with getinfo()
 
         """
-        for field, value in CURL_INFO_MAP.iteritems():
+        for field, value in CURL_INFO_MAP.items():
             try:
                 field_data = self._curl_opener.getinfo(value)
-            except Exception, e:
+            except Exception as e:
                 logger.warn(e)
                 continue
             else:
@@ -786,7 +786,7 @@ class Response(object):
                 if not header:
                     continue
                 elif not header.startswith("HTTP"):
-                    field, value = map(lambda u: u.strip(), header.split(":", 1))
+                    field, value = [u.strip() for u in header.split(":", 1)]
                     if field.startswith("Location"):
                         # maybe not good
                         if not value.startswith("http"):
@@ -799,7 +799,7 @@ class Response(object):
                     # extract version, code, message from first header
                     try:
                         version, code, message = HTTP_GENERAL_RESPONSE_HEADER.findall(header)[0]
-                    except Exception, e:
+                    except Exception as e:
                         logger.warn(e)
                         continue
                     else:
@@ -823,7 +823,7 @@ class Response(object):
 
 
     def parse_cookies(self):
-        from Cookie import SimpleCookie, CookieError
+        from http.cookies import SimpleCookie, CookieError
 
         if not self._headers_history:
             self._parse_headers_raw()
@@ -841,13 +841,13 @@ class Response(object):
                 try:
                     cookie = SimpleCookie()
                     cookie.load(value)
-                    cookies.extend(cookie.values())
+                    cookies.extend(list(cookie.values()))
 
                     # update cookie jar
-                    for morsel in cookie.values():
+                    for morsel in list(cookie.values()):
                         if isinstance(self._cookies_jar, CookieJar):
                             self._cookies_jar.set_cookie(morsel_to_cookie(morsel))
-                except CookieError, e:
+                except CookieError as e:
                     logger.warn(e)
         self._cookies = dict([(cookie.key, cookie.value) for cookie in cookies])
         return self._cookies

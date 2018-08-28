@@ -19,9 +19,9 @@ try:
 except ImportError:
     import pycurl
 
-from urllib import urlencode
+from urllib.parse import urlencode
 
-import methods as hurl
+from . import methods as hurl
 from .exceptions import InterfaceError
 from .utils import *
 
@@ -298,7 +298,7 @@ class OAuthManager(AuthManager):
         elif signature_method is None:
             self._signature_method = SignatureMethod_PLAINTEXT()
         elif isinstance(signature_method, StringTypes):
-            if signature_method.upper() in self.SIGNATURES_METHODS.keys():
+            if signature_method.upper() in list(self.SIGNATURES_METHODS.keys()):
                 self._signature_method = self.SIGNATURES_METHODS[signature_method.upper()]()
             else:
                 raise RuntimeError('Unknown signature method')

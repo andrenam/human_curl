@@ -38,7 +38,7 @@ __build__ = 0x000020
 try:
     __version__ = __import__('pkg_resources') \
         .get_distribution('human_curl').version
-except Exception, e:
+except Exception as e:
     __version__ = 'unknown'
 
 if __version__ == 'unknown':

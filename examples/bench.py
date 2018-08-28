@@ -43,7 +43,7 @@ with timer("human_curl"):
                             max_redirects=10)
         print(r)
         #print(json.loads(r.content))
-    except Exception, e:
+    except Exception as e:
         print(e)
 
 with timer("python-requests"):
@@ -51,7 +51,7 @@ with timer("python-requests"):
         r = requests.post('http://h.wrttn.me/post', allow_redirects=True, files=files)
         print(r)
         #print(json.loads(r.response))
-    except Exception, e:
+    except Exception as e:
         print(e)
 
 custom_headers = (

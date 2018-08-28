@@ -113,7 +113,7 @@ class AsyncClient(object):
         # Get calculated connections count
         num_openers = self.connections_count
 
-        for i in xrange(num_openers):
+        for i in range(num_openers):
             self._openers_pool.handles.append(self.get_opener())
 
         logger.info("Created {0} openers".format(num_openers))
@@ -242,7 +242,7 @@ class AsyncClient(object):
         while True:
             try:
                 num_queued, success_list, error_list = self._openers_pool.info_read()
-            except Exception, e:
+            except Exception as e:
                 logger.warn(e)
                 raise CurlError(e[0], e[1])
 

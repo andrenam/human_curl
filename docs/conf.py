@@ -40,8 +40,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'human_curl'
-copyright = u'2011, Alexandr Lispython (alex@obout.ru)'
+project = 'human_curl'
+copyright = '2011, Alexandr Lispython (alex@obout.ru)'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -183,8 +183,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'human_curl.tex', u'human\\_curl Documentation',
-   u'Alexandr Lispython (alex@obout.ru)', 'manual'),
+  ('index', 'human_curl.tex', 'human\\_curl Documentation',
+   'Alexandr Lispython (alex@obout.ru)', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -213,8 +213,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'human_curl', u'human_curl Documentation',
-     [u'Alexandr Lispython (alex@obout.ru)'], 1)
+    ('index', 'human_curl', 'human_curl Documentation',
+     ['Alexandr Lispython (alex@obout.ru)'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -227,7 +227,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'human_curl', u'human_curl Documentation', u'Alexandr Lispython (alex@obout.ru)',
+  ('index', 'human_curl', 'human_curl Documentation', 'Alexandr Lispython (alex@obout.ru)',
    'human_curl', 'One line description of project.', 'Miscellaneous'),
 ]
 

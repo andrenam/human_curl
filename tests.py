@@ -9,31 +9,31 @@ Unittests for human_curl
 :copyright: (c) 2011 - 2012 by Alexandr Lispython (alex@obout.ru).
 :license: BSD, see LICENSE for more details.
 """
-from __future__ import with_statement
+
 
 import os
 import time
 import pycurl2 as pycurl
-import cookielib
-from Cookie import Morsel
+import http.cookiejar
+from http.cookies import Morsel
 import json
 import uuid
 from random import randint, choice
 from string import ascii_letters, digits
 import logging
-from urlparse import urljoin
+from urllib.parse import urljoin
 import unittest
-import urllib
+import urllib.request, urllib.parse, urllib.error
 from types import TupleType, ListType, FunctionType, DictType
-from urllib import urlencode
+from urllib.parse import urlencode
 
-import human_curl as requests
-from human_curl import Request, Response
-from human_curl import AsyncClient
-from human_curl.auth import *
-from human_curl.utils import *
+from . import human_curl as requests
+from .human_curl import Request, Response
+from .human_curl import AsyncClient
+from .human_curl.auth import *
+from .human_curl.utils import *
 
-from human_curl.exceptions import (CurlError, InterfaceError)
+from .human_curl.exceptions import (CurlError, InterfaceError)
 
 logger = logging.getLogger("human_curl.test")
 
@@ -89,7 +89,7 @@ def stdout_debug(debug_type, debug_msg):
 
 
 def random_string(num=10):
-    return ''.join([choice(ascii_letters + digits) for x in xrange(num)])
+    return ''.join([choice(ascii_letters + digits) for x in range(num)])
 
 
 class BaseTestCase(unittest.TestCase):
@@ -99,7 +99,7 @@ class BaseTestCase(unittest.TestCase):
         return random_string(10)
 
     def random_dict(self, num=10):
-        return dict([(self.random_string(10), self.random_string(10))for x in xrange(10)])
+        return dict([(self.random_string(10), self.random_string(10))for x in range(10)])
 
     def request_params(self):
         data = self.random_dict(10)
@@ -112,15 +112,15 @@ class BaseTestCase(unittest.TestCase):
 class RequestsTestCase(BaseTestCase):
 
     def test_build_url(self):
-        self.assertEquals(build_url("get"), HTTP_TEST_URL + "/" + "get")
-        self.assertEquals(build_url("post"), HTTP_TEST_URL + "/" + "post")
-        self.assertEquals(build_url("redirect", "3"), HTTP_TEST_URL + "/" + "redirect" + "/" + "3")
+        self.assertEqual(build_url("get"), HTTP_TEST_URL + "/" + "get")
+        self.assertEqual(build_url("post"), HTTP_TEST_URL + "/" + "post")
+        self.assertEqual(build_url("redirect", "3"), HTTP_TEST_URL + "/" + "redirect" + "/" + "3")
 
     def tests_invalid_url(self):
         self.assertRaises(ValueError, requests.get, "wefwefwegrer")
 
     def test_url(self):
-        self.assertEquals(requests.get(build_url("get")).url, build_url("get"))
+        self.assertEqual(requests.get(build_url("get")).url, build_url("get"))
 
     def test_request(self):
         for method, method_func in TEST_METHODS:
@@ -129,30 +129,30 @@ class RequestsTestCase(BaseTestCase):
 
     def test_HTTP_GET(self):
         r = requests.get(build_url("get"))
-        self.assertEquals(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)
 
     def test_HTTP_POST(self):
         r = requests.post(build_url("post"))
-        self.assertEquals(r.status_code, 201)
+        self.assertEqual(r.status_code, 201)
 
     def test_HTTP_HEAD(self):
         r = requests.head(build_url("head"))
-        self.assertEquals(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)
 
     def test_HTTP_PUT(self):
         r = requests.put(build_url("put"))
-        self.assertEquals(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)
         r2 = requests.put(build_url("put"),
                           data='kcjbwefjhwbcelihbflwkh')
-        self.assertEquals(r2.status_code, 200)
+        self.assertEqual(r2.status_code, 200)
 
     def test_HTTP_DELETE(self):
         r = requests.delete(build_url("delete"))
-        self.assertEquals(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)
 
     def test_HTTP_OPTIONS(self):
         r = requests.options(build_url("options"))
-        self.assertEquals(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)
 
     def test_HEADERS(self):
         import string
@@ -160,33 +160,33 @@ class RequestsTestCase(BaseTestCase):
                    ("Another-Test-Header", "kjwbrlfjbwekjbf"))
 
         r = requests.get(build_url("headers"), headers=headers)
-        self.assertEquals(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)
 
         r_json = json.loads(r.content)
         for field, value in headers:
-            self.assertEquals(r_json.get(string.capwords(field, "-")), value)
+            self.assertEqual(r_json.get(string.capwords(field, "-")), value)
 
     def test_PARAMS(self):
         params = {'q': 'test param'}
         r = requests.get(build_url("get""?test=true"), params=params)
-        self.assertEquals(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)
         args = json.loads(r.content)['args']
-        self.assertEquals(args['q'][0], params['q'])
-        self.assertEquals(args["test"][0], "true")
+        self.assertEqual(args['q'][0], params['q'])
+        self.assertEqual(args["test"][0], "true")
 
     def test_POST_DATA(self):
         random_key = "key_" + uuid.uuid4().get_hex()[:10]
         random_value = "value_" + uuid.uuid4().get_hex()
         r = requests.post(build_url('post'),
                           data={random_key: random_value})
-        self.assertEquals(r.status_code, 201)
+        self.assertEqual(r.status_code, 201)
 
     def test_PUT_DATA(self):
         random_key = "key_" + uuid.uuid4().get_hex()[:10]
         random_value = "value_" + uuid.uuid4().get_hex()
         r = requests.put(build_url('put'),
                           data={random_key: random_value})
-        self.assertEquals(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)
 
     def test_POST_RAW_DATA(self):
         random_key = "key_" + uuid.uuid4().get_hex()[:10]
@@ -194,7 +194,7 @@ class RequestsTestCase(BaseTestCase):
         data = "%s:%s" % (random_key, random_value)
         r = requests.post(build_url('post'),
                           data=data)
-        self.assertEquals(r.status_code, 201)
+        self.assertEqual(r.status_code, 201)
         self.assertTrue(data in r.content)
 
     def test_PUT_RAW_DATA(self):
@@ -203,7 +203,7 @@ class RequestsTestCase(BaseTestCase):
         data = "%s:%s" % (random_key, random_value)
         r = requests.put(build_url('put'),
                           data=data)
-        self.assertEquals(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)
         self.assertTrue(data in r.content)
 
     def test_FILES(self):
@@ -212,9 +212,9 @@ class RequestsTestCase(BaseTestCase):
         r = requests.post(build_url('post'),
                           files=files)
         json_response = json.loads(r.content)
-        self.assertEquals(r.status_code, 201)
-        for k, v in files.items():
-            self.assertTrue(k in json_response['files'].keys())
+        self.assertEqual(r.status_code, 201)
+        for k, v in list(files.items()):
+            self.assertTrue(k in list(json_response['files'].keys()))
 
     def test_POST_DATA_and_FILES(self):
         files = {'test_file': open('tests.py'),
@@ -228,7 +228,7 @@ class RequestsTestCase(BaseTestCase):
                                 random_key2: random_value2},
                           files=files)
 
-        self.assertEquals(r.status_code, 201)
+        self.assertEqual(r.status_code, 201)
 
     def test_PUT_DATA_and_FILES(self):
         files = {'test_file': open('tests.py'),
@@ -241,7 +241,7 @@ class RequestsTestCase(BaseTestCase):
                                 random_key2: random_value2},
                           files=files)
 
-        self.assertEquals(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)
 
     def test_cookies_jar(self):
         random_key = "key_" + uuid.uuid4().get_hex()[:10]
@@ -252,24 +252,24 @@ class RequestsTestCase(BaseTestCase):
         cookies = ((random_key, random_value),
                    (random_key2, random_value2))
 
-        cookies_jar = cookielib.CookieJar()
+        cookies_jar = http.cookiejar.CookieJar()
 
         r1 = requests.get(build_url("cookies", "set", random_key, random_value),
                      cookies=cookies_jar, debug=stdout_debug)
 
-        self.assertEquals(r1.cookies[random_key], random_value)
+        self.assertEqual(r1.cookies[random_key], random_value)
         rtmp = requests.get(build_url("cookies", "set", random_key2, random_value2),
                             cookies=cookies_jar, debug=stdout_debug)
 
         for cookie in cookies_jar:
             if cookie.name == random_key:
-                self.assertEquals(cookie.value, random_value)
+                self.assertEqual(cookie.value, random_value)
 
         r3 = requests.get(build_url('cookies'), cookies=cookies_jar, debug=stdout_debug)
         json_response = json.loads(r3.content)
 
         for k, v in cookies:
-            self.assertEquals(json_response[k], v)
+            self.assertEqual(json_response[k], v)
 
     def test_send_cookies(self):
         random_key = "key_" + uuid.uuid4().get_hex()[:10]
@@ -283,7 +283,7 @@ class RequestsTestCase(BaseTestCase):
         r = requests.get(build_url('cookies'), cookies=cookies)
         #                          debug=stdout_debug)
         json_response = json.loads(r.content)
-        self.assertEquals(json_response[random_key], random_value)
+        self.assertEqual(json_response[random_key], random_value)
 
 
     def test_basic_auth(self):
@@ -293,11 +293,11 @@ class RequestsTestCase(BaseTestCase):
 
         r = requests.get(build_url('basic-auth', username, password),
                          auth=auth_manager)
-        self.assertEquals(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)
         json_response = json.loads(r.content)
-        self.assertEquals(json_response['password'], password)
-        self.assertEquals(json_response['username'], username)
-        self.assertEquals(json_response['auth-type'], 'basic')
+        self.assertEqual(json_response['password'], password)
+        self.assertEqual(json_response['username'], username)
+        self.assertEqual(json_response['auth-type'], 'basic')
 
     def test_digest_auth(self):
         username = uuid.uuid4().get_hex()
@@ -306,11 +306,11 @@ class RequestsTestCase(BaseTestCase):
 
         r = requests.get(build_url('digest-auth/auth/', username, password),
                          auth=auth_manager, allow_redirects=True)
-        self.assertEquals(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)
         json_response = json.loads(r.content)
-        self.assertEquals(json_response['password'], password)
-        self.assertEquals(json_response['username'], username)
-        self.assertEquals(json_response['auth-type'], 'digest')
+        self.assertEqual(json_response['password'], password)
+        self.assertEqual(json_response['username'], username)
+        self.assertEqual(json_response['auth-type'], 'digest')
 
     def test_auth_denied(self):
         username = "hacker_username"
@@ -318,7 +318,7 @@ class RequestsTestCase(BaseTestCase):
         http_auth = (username, password)
 
         r = requests.get(build_url('basic-auth', "username", "password"), auth=http_auth)
-        self.assertEquals(r.status_code, 401)
+        self.assertEqual(r.status_code, 401)
 
     def test_multivalue_params(self):
         random_key = "key_" + uuid.uuid4().get_hex()[:10]
@@ -327,7 +327,7 @@ class RequestsTestCase(BaseTestCase):
         r = requests.get(build_url("get"),
                          params={random_key: (random_value1, random_value2)})
 
-        self.assertEquals(build_url("get?%s" %
+        self.assertEqual(build_url("get?%s" %
                                     urlencode(((random_key, random_value1), (random_key, random_value2)))), r.url)
 
         json_response = json.loads(r.content)
@@ -360,27 +360,27 @@ class RequestsTestCase(BaseTestCase):
 
     def test_redirect(self):
         r = requests.get(build_url("redirect", '3'), allow_redirects=True)
-        self.assertEquals(r.status_code, 200)
-        self.assertEquals(len(r.history), 3)
-        self.assertEquals(r.url, build_url("redirect/end"))
-        self.assertEquals(r._request_url, build_url("redirect/3"))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.history), 3)
+        self.assertEqual(r.url, build_url("redirect/end"))
+        self.assertEqual(r._request_url, build_url("redirect/3"))
         self.assertRaises(CurlError, requests.get, build_url("redirect", '7'),
                           allow_redirects=True)
 
     def test_gzip(self):
         r = requests.get(build_url("gzip"), use_gzip=True)
 
-        self.assertEquals(r.headers['Content-Encoding'], 'gzip')
+        self.assertEqual(r.headers['Content-Encoding'], 'gzip')
 
         json_response = json.loads(r.content)
-        self.assertEquals(json_response['gzipped'], True)
+        self.assertEqual(json_response['gzipped'], True)
 
     def test_response_info(self):
         r = requests.get(build_url("get"))
 
     def test_unicode_domains(self):
         r = requests.get("http://➡.ws/pep8")
-        self.assertEquals(r.url, 'http://xn--hgi.ws/pep8')
+        self.assertEqual(r.url, 'http://xn--hgi.ws/pep8')
 
     def test_hooks(self):
         def pre_hook(r):
@@ -395,11 +395,11 @@ class RequestsTestCase(BaseTestCase):
 
         r1 = requests.get(build_url("get"), hooks={'pre_request': pre_hook,
                                                    'post_request': post_hook})
-        self.assertEquals(r1._request.pre_hook, True)
-        self.assertEquals(r1._request.post_hook, True)
+        self.assertEqual(r1._request.pre_hook, True)
+        self.assertEqual(r1._request.post_hook, True)
 
         r2 = requests.get(build_url("get"), hooks={'response_hook': response_hook})
-        self.assertEquals(r2._status_code, 700)
+        self.assertEqual(r2._status_code, 700)
 
     def test_json_response(self):
         random_key = "key_" + uuid.uuid4().get_hex()[:10]
@@ -408,12 +408,12 @@ class RequestsTestCase(BaseTestCase):
         r = requests.get(build_url("get"),
                          params={random_key: (random_value1, random_value2)})
 
-        self.assertEquals(build_url("get?%s" %
+        self.assertEqual(build_url("get?%s" %
                                     urlencode(((random_key, random_value1), (random_key, random_value2)))), r.url)
 
         json_response = json.loads(r.content)
         self.assertTrue(isinstance(r.json, (dict, DictType)))
-        self.assertEquals(json_response, r.json)
+        self.assertEqual(json_response, r.json)
         self.assertTrue(random_value1 in r.json['args'][random_key])
         self.assertTrue(random_value2 in r.json['args'][random_key])
 
@@ -421,11 +421,11 @@ class RequestsTestCase(BaseTestCase):
         params = {'q': 'value with space and @'}
         key, value = 'email', 'user@domain.com'
         response = requests.get(build_url("get""?%s=%s" % (key, value)), params=params)
-        self.assertEquals(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual("{0}/get?email=user%40domain.com&q=value+with+space+and+%40".format(HTTP_TEST_URL), response.request._url)
         args = json.loads(response.content)['args']
-        self.assertEquals(args['q'][0], params['q'])
-        self.assertEquals(args[key][0], value)
+        self.assertEqual(args['q'][0], params['q'])
+        self.assertEqual(args[key][0], value)
 
     def test_get_no_encode_query(self):
         params = {'q': 'value with space and @'}
@@ -434,10 +434,10 @@ class RequestsTestCase(BaseTestCase):
         # Invalid by HTTP spec
         try:
             response = requests.get(build_url("get""?%s=%s" % (key, value)), params=params, encode_query=False)
-        except CurlError, e:
+        except CurlError as e:
             self.assertEqual(e.code, 52)
         else:
-            self.assertEquals(response.status_code, 502)
+            self.assertEqual(response.status_code, 502)
             self.assertEqual("{0}/get?email=user@domain.com&q=value with space and @".format(HTTP_TEST_URL), response.request._url)
 
     def test_request_key_with_empty_value(self):
@@ -488,38 +488,38 @@ class UtilsTestCase(BaseTestCase):
             "CamelCaseKey": uuid.uuid4().hex}
         cidict = CaseInsensitiveDict(test_data)
 
-        for k, v in test_data.items():
+        for k, v in list(test_data.items()):
             self.assertTrue(cidict[k], v)
 
     def test_cookies_from_jar(self):
-        test_cookie_jar = cookielib.CookieJar()
+        test_cookie_jar = http.cookiejar.CookieJar()
 
         cookies_dict = from_cookiejar(test_cookie_jar)
 
         for cookie in test_cookie_jar:
-            self.assertEquals(cookies_dict[cookie.name], cookie.value)
+            self.assertEqual(cookies_dict[cookie.name], cookie.value)
 
     def test_jar_from_cookies(self):
-        cookies_dict = dict([(uuid.uuid4().hex, uuid.uuid4().hex) for x in xrange(10)])
-        cookies_list = [(uuid.uuid4().hex, uuid.uuid4().hex) for x in xrange(10)]
+        cookies_dict = dict([(uuid.uuid4().hex, uuid.uuid4().hex) for x in range(10)])
+        cookies_list = [(uuid.uuid4().hex, uuid.uuid4().hex) for x in range(10)]
 
         cookiejar1 = to_cookiejar(cookies_dict)
         cookiejar2 = to_cookiejar(cookies_list)
 
         for cookie in cookiejar1:
-            self.assertEquals(cookie.value, cookies_dict[cookie.name])
+            self.assertEqual(cookie.value, cookies_dict[cookie.name])
 
         for cookie in cookiejar2:
             for k, v in cookies_list:
                 if k == cookie.name:
-                    self.assertEquals(cookie.value, v)
+                    self.assertEqual(cookie.value, v)
 
     def test_decode_gzip(self):
         from gzip import GzipFile
         try:
             from cString import StringIO
         except ImportError:
-            from StringIO import StringIO
+            from io import StringIO
 
         data_for_gzip = Request.__doc__
         tmp_buffer = StringIO()
@@ -534,7 +534,7 @@ class UtilsTestCase(BaseTestCase):
 
         gzipped_data = tmp_buffer.getvalue()
         tmp_buffer.close()
-        self.assertEquals(data_for_gzip, decode_gzip(gzipped_data))
+        self.assertEqual(data_for_gzip, decode_gzip(gzipped_data))
 
     def test_morsel_to_cookie(self):
         from time import strftime, localtime
@@ -548,16 +548,16 @@ class UtilsTestCase(BaseTestCase):
         m.value = "fvjlrwnlkjnf"
 
         c = morsel_to_cookie(m)
-        self.assertEquals(m.key, c.name)
-        self.assertEquals(m.value, c.value)
+        self.assertEqual(m.key, c.name)
+        self.assertEqual(m.value, c.value)
         for x in ('expires', 'path', 'comment', 'domain',
                   'secure', 'version'):
             if x == 'expires':
-                self.assertEquals(m[x], strftime(time_template, localtime(getattr(c, x, None))))
+                self.assertEqual(m[x], strftime(time_template, localtime(getattr(c, x, None))))
             elif x == 'version':
                 self.assertTrue(isinstance(getattr(c, x, None), int))
             else:
-                self.assertEquals(m[x], getattr(c, x, None))
+                self.assertEqual(m[x], getattr(c, x, None))
 
     def test_data_wrapper(self):
         random_key1 = "key_" + uuid.uuid4().get_hex()[:10]
@@ -607,7 +607,7 @@ class UtilsTestCase(BaseTestCase):
             if isinstance(v, (TupleType, ListType)):
                 self.assertTrue(isinstance(v, (TupleType, ListType)))
                 self.assertTrue(os.path.exists(v[1]))
-                self.assertEquals(v[0], pycurl.FORM_FILE)
+                self.assertEqual(v[0], pycurl.FORM_FILE)
             else:
                 assert False
 
@@ -627,12 +627,12 @@ class AuthManagersTestCase(BaseTestCase):
                  opaque="5ccc069c403ebaf9f0171e9517f40e41"'''
 
         parsed_header = parse_dict_header(value)
-        self.assertEquals(parsed_header['username'], "Mufasa")
-        self.assertEquals(parsed_header['realm'], "testrealm@host.com")
-        self.assertEquals(parsed_header['nonce'], "dcd98b7102dd2f0e8b11d0f600bfb0c093")
-        self.assertEquals(parsed_header['uri'], "/dir/index.html")
-        self.assertEquals(parsed_header['qop'], "auth")
-        self.assertEquals(parsed_header['nc'], "00000001")
+        self.assertEqual(parsed_header['username'], "Mufasa")
+        self.assertEqual(parsed_header['realm'], "testrealm@host.com")
+        self.assertEqual(parsed_header['nonce'], "dcd98b7102dd2f0e8b11d0f600bfb0c093")
+        self.assertEqual(parsed_header['uri'], "/dir/index.html")
+        self.assertEqual(parsed_header['qop'], "auth")
+        self.assertEqual(parsed_header['nc'], "00000001")
 
 
     def test_parse_authorization_header(self):
@@ -658,8 +658,8 @@ class AuthManagersTestCase(BaseTestCase):
                         'uri': '/dir/index.html',
                         'response': '6629fae49393a05397450978507c4ef1'}
 
-        for k, v in control_dict.iteritems():
-            self.assertEquals(digest_authorization[k], v)
+        for k, v in control_dict.items():
+            self.assertEqual(digest_authorization[k], v)
 
         self.assertTrue(isinstance(digest_authorization, Authorization))
 
@@ -682,14 +682,14 @@ class AuthManagersTestCase(BaseTestCase):
                         'oauth_callback': 'http://printer.example.com/ready'}
 
 
-        for k, v in control_dict.iteritems():
-            self.assertEquals(oauth_authorization[k], v)
+        for k, v in control_dict.items():
+            self.assertEqual(oauth_authorization[k], v)
 
         self.assertTrue(isinstance(digest_authorization, Authorization))
 
 
     def test_escape(self):
-        self.assertEquals(urllib.unquote(url_escape("http://sp.example.com/")),
+        self.assertEqual(urllib.parse.unquote(url_escape("http://sp.example.com/")),
                           "http://sp.example.com/")
 
 
@@ -707,8 +707,8 @@ class AuthManagersTestCase(BaseTestCase):
                         'nonce': "dcd98b7102dd2f0e8b11d0f600bfb0c093",
                         'opaque': "5ccc069c403ebaf9f0171e9517f40e41"}
 
-        for k, v in control_dict.iteritems():
-            self.assertEquals(parsed_authentication[k], v)
+        for k, v in control_dict.items():
+            self.assertEqual(parsed_authentication[k], v)
 
         self.assertTrue(isinstance(parsed_authentication, WWWAuthenticate))
         oauth_authentication_header_value = 'OAuth realm="http://sp.example.com/"'
@@ -716,17 +716,17 @@ class AuthManagersTestCase(BaseTestCase):
         parsed_oauth_authentication = parse_authenticate_header(oauth_authentication_header_value)
 
         control_dict = {'realm': 'http://sp.example.com/'}
-        for k, v in control_dict.iteritems():
-            self.assertEquals(parsed_oauth_authentication[k], v)
+        for k, v in control_dict.items():
+            self.assertEqual(parsed_oauth_authentication[k], v)
 
         self.assertTrue(isinstance(parsed_oauth_authentication, WWWAuthenticate))
 
 
     def test_generate_nonce(self):
-        self.assertEquals(len(generate_nonce(8)), 8)
+        self.assertEqual(len(generate_nonce(8)), 8)
 
     def test_generate_verifier(self):
-        self.assertEquals(len(generate_nonce(8)), 8)
+        self.assertEqual(len(generate_nonce(8)), 8)
 
     def test_signature_HMAC_SHA1(self):
         consumer_secret = "consumer_secret"
@@ -743,8 +743,8 @@ class AuthManagersTestCase(BaseTestCase):
         control_base_signature_string = 'GET&http%3A%2F%2Fapi.simplegeo.com%2F1.0%2Fplaces%2Faddress.json&address%3D41%2520Decatur%2520St%252C%2520San%2520Francisco%252C%2520CA%26category%3Danimal%26oauth_signature_method%3DHMAC-SHA1%26q%3Dmonkeys'
 
         method = SignatureMethod_HMAC_SHA1()
-        self.assertEquals(method.signing_base(request, consumer_secret, None)[1], control_base_signature_string)
-        self.assertEquals(method.sign(request, consumer_secret, None), control_signature)
+        self.assertEqual(method.signing_base(request, consumer_secret, None)[1], control_base_signature_string)
+        self.assertEqual(method.sign(request, consumer_secret, None), control_signature)
 
         consumer_secret = 'kd94hf93k423kf44'
         token_secret = 'pfkkdhi9sl3r4s00'
@@ -759,12 +759,12 @@ class AuthManagersTestCase(BaseTestCase):
         control_base_signature_string = 'GET&http%3A%2F%2Fphotos.example.net%2Fphotos&file%3Dvacation.jpg%26oauth_consumer_key%3Ddpf43f3p2l4k3l03%26oauth_nonce%3Dkllo9940pd9333jh%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1191242096%26oauth_token%3Dnnch734d00sl2jdk%26oauth_version%3D1.0%26size%3Doriginal'
 
         method = SignatureMethod_HMAC_SHA1()
-        self.assertEquals(method.signing_base(request, consumer_secret, token_secret)[1], control_base_signature_string)
-        self.assertEquals(method.sign(request, consumer_secret, token_secret), control_signature)
+        self.assertEqual(method.signing_base(request, consumer_secret, token_secret)[1], control_base_signature_string)
+        self.assertEqual(method.sign(request, consumer_secret, token_secret), control_signature)
 
 
     def test_signature_PLAIN_TEXT(self):
-        url = u'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc\u2766,+CA'
+        url = 'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc\u2766,+CA'
 
         request = {'method': 'POST',
                    'normalized_url': normalize_url(url),
@@ -772,55 +772,55 @@ class AuthManagersTestCase(BaseTestCase):
 
         method = SignatureMethod_PLAINTEXT()
 
-        self.assertEquals(method.sign(request, "djr9rjt0jd78jf88", "jjd999tj88uiths3"), 'djr9rjt0jd78jf88%26jjd999tj88uiths3')
-        self.assertEquals(method.sign(request, "djr9rjt0jd78jf88", "jjd99$tj88uiths3"), 'djr9rjt0jd78jf88%26jjd99%2524tj88uiths3')
-        self.assertEquals(method.sign(request, "djr9rjt0jd78jf88", None), 'djr9rjt0jd78jf88%26')
+        self.assertEqual(method.sign(request, "djr9rjt0jd78jf88", "jjd999tj88uiths3"), 'djr9rjt0jd78jf88%26jjd999tj88uiths3')
+        self.assertEqual(method.sign(request, "djr9rjt0jd78jf88", "jjd99$tj88uiths3"), 'djr9rjt0jd78jf88%26jjd99%2524tj88uiths3')
+        self.assertEqual(method.sign(request, "djr9rjt0jd78jf88", None), 'djr9rjt0jd78jf88%26')
 
 
     def test_normalize_parameters(self):
-        url = u'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc\u2766,+CA'
+        url = 'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc\u2766,+CA'
         parameters = 'address=41%20Decatur%20St%2C%20San%20Francisc%E2%9D%A6%2C%20CA&category=animal&q=monkeys'
-        self.assertEquals(parameters, normalize_parameters(url))
+        self.assertEqual(parameters, normalize_parameters(url))
 
-        url = u'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc\u2766,+CA'
-        self.assertEquals(parameters, normalize_parameters(url))
+        url = 'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc\u2766,+CA'
+        self.assertEqual(parameters, normalize_parameters(url))
 
         url = 'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc\xe2\x9d\xa6,+CA'
-        self.assertEquals(parameters, normalize_parameters(url))
+        self.assertEqual(parameters, normalize_parameters(url))
 
         url = 'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc%E2%9D%A6,+CA'
-        self.assertEquals(parameters, normalize_parameters(url))
+        self.assertEqual(parameters, normalize_parameters(url))
 
-        url = u'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc%E2%9D%A6,+CA'
-        self.assertEquals(parameters, normalize_parameters(url))
+        url = 'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc%E2%9D%A6,+CA'
+        self.assertEqual(parameters, normalize_parameters(url))
 
 
 
     def test_normalize_url(self):
-        url = u'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc\u2766,+CA'
+        url = 'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc\u2766,+CA'
         control_url = "http://api.simplegeo.com/1.0/places/address.json"
 
-        self.assertEquals(control_url, normalize_url(url))
+        self.assertEqual(control_url, normalize_url(url))
 
-        url = u'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc\u2766,+CA'
-        self.assertEquals(control_url, normalize_url(url))
+        url = 'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc\u2766,+CA'
+        self.assertEqual(control_url, normalize_url(url))
 
         url = 'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc\xe2\x9d\xa6,+CA'
-        self.assertEquals(control_url, normalize_url(url))
+        self.assertEqual(control_url, normalize_url(url))
 
         url = 'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc%E2%9D%A6,+CA'
-        self.assertEquals(control_url, normalize_url(url))
+        self.assertEqual(control_url, normalize_url(url))
 
-        url = u'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc%E2%9D%A6,+CA'
-        self.assertEquals(control_url, normalize_url(url))
+        url = 'http://api.simplegeo.com:80/1.0/places/address.json?q=monkeys&category=animal&address=41+Decatur+St,+San+Francisc%E2%9D%A6,+CA'
+        self.assertEqual(control_url, normalize_url(url))
 
 
     def test_oauth_consumer(self):
         consumer_key = "ljdsfhwjkbnflkjfqkebr"
         consumer_secret = "kjwbefpbnwefgwre"
         consumer = OAuthConsumer(consumer_key, consumer_secret)
-        self.assertEquals(consumer_key, consumer._key)
-        self.assertEquals(consumer_secret, consumer._secret)
+        self.assertEqual(consumer_key, consumer._key)
+        self.assertEqual(consumer_secret, consumer._secret)
         self.assertTrue(isinstance(consumer, OAuthConsumer))
 
     def test_oauth_token(self):
@@ -840,7 +840,7 @@ class AuthManagersTestCase(BaseTestCase):
         tmp_token_key = "kfwbehlfbqlihrbwf"
         tmp_token_secret = "dlewknfd3jkr4nbfklb5ihrlbfg"
 
-        verifier = ''.join(map(str, [randint(1, 40) for x in xrange(7)]))
+        verifier = ''.join(map(str, [randint(1, 40) for x in range(7)]))
 
         request_token_url = build_url("oauth/1.0/request_token/%s/%s/%s/%s" % \
                              (consumer_key, consumer_secret, tmp_token_key, tmp_token_secret))
@@ -866,7 +866,7 @@ class AuthManagersTestCase(BaseTestCase):
                                      access_token_url=access_token_url,
                                      signature_method=SignatureMethod_PLAINTEXT)
 
-        self.assertEquals(oauth_manager.state, 1)
+        self.assertEqual(oauth_manager.state, 1)
         self.assertTrue(isinstance(oauth_manager._signature_method, SignatureMethod))
         oauth_manager.setup_request(r)
 
@@ -874,11 +874,11 @@ class AuthManagersTestCase(BaseTestCase):
 
         oauth_manager.request_token()
 
-        self.assertEquals(oauth_manager.state, 3)
-        self.assertEquals(oauth_manager._tmp_token_key, tmp_token_key)
-        self.assertEquals(oauth_manager._tmp_token_secret, tmp_token_secret)
+        self.assertEqual(oauth_manager.state, 3)
+        self.assertEqual(oauth_manager._tmp_token_key, tmp_token_key)
+        self.assertEqual(oauth_manager._tmp_token_secret, tmp_token_secret)
 
-        self.assertEquals(oauth_manager.confirm_url, "%s?oauth_token=%s" % \
+        self.assertEqual(oauth_manager.confirm_url, "%s?oauth_token=%s" % \
                           (oauth_manager._authorize_url, oauth_manager._tmp_token_key))
 
         pin = json.loads(requests.get(oauth_manager.confirm_url,
@@ -886,17 +886,17 @@ class AuthManagersTestCase(BaseTestCase):
         oauth_manager.verify(pin)
 
 
-        self.assertEquals(oauth_manager.state, 5)
-        self.assertEquals(pin, oauth_manager._verifier)
-        self.assertEquals(tmp_token_key, oauth_manager._tmp_token_key)
-        self.assertEquals(tmp_token_secret, oauth_manager._tmp_token_secret)
+        self.assertEqual(oauth_manager.state, 5)
+        self.assertEqual(pin, oauth_manager._verifier)
+        self.assertEqual(tmp_token_key, oauth_manager._tmp_token_key)
+        self.assertEqual(tmp_token_secret, oauth_manager._tmp_token_secret)
 
         oauth_manager.access_request()
 
         self.assertTrue(isinstance(oauth_manager._token, OAuthToken))
-        self.assertEquals(oauth_manager._token._key, token_key)
-        self.assertEquals(oauth_manager._token._secret, token_secret)
-        self.assertEquals(oauth_manager.state, 7)
+        self.assertEqual(oauth_manager._token._key, token_key)
+        self.assertEqual(oauth_manager._token._secret, token_secret)
+        self.assertEqual(oauth_manager.state, 7)
 
         ## opener, body_output, headers_output = r.build_opener(r._build_url())
         ## oauth_manager.setup(opener)
@@ -919,7 +919,7 @@ class AuthManagersTestCase(BaseTestCase):
         tmp_token_key = "kfwbehlfbqlihrbwf"
         tmp_token_secret = "dlewknfd3jkr4nbfklb5ihrlbfg"
 
-        verifier = ''.join(map(str, [randint(1, 40) for x in xrange(7)]))
+        verifier = ''.join(map(str, [randint(1, 40) for x in range(7)]))
 
         request_token_url = build_url("oauth/1.0/request_token/%s/%s/%s/%s" % \
                              (consumer_key, consumer_secret, tmp_token_key, tmp_token_secret))
@@ -946,7 +946,7 @@ class AuthManagersTestCase(BaseTestCase):
                                      access_token_url=access_token_url,
                                      signature_method=SignatureMethod_HMAC_SHA1)
 
-        self.assertEquals(oauth_manager.state, 1)
+        self.assertEqual(oauth_manager.state, 1)
         self.assertTrue(isinstance(oauth_manager._signature_method, SignatureMethod))
         oauth_manager.setup_request(r)
 
@@ -954,11 +954,11 @@ class AuthManagersTestCase(BaseTestCase):
 
         oauth_manager.request_token()
 
-        self.assertEquals(oauth_manager.state, 3)
-        self.assertEquals(oauth_manager._tmp_token_key, tmp_token_key)
-        self.assertEquals(oauth_manager._tmp_token_secret, tmp_token_secret)
+        self.assertEqual(oauth_manager.state, 3)
+        self.assertEqual(oauth_manager._tmp_token_key, tmp_token_key)
+        self.assertEqual(oauth_manager._tmp_token_secret, tmp_token_secret)
 
-        self.assertEquals(oauth_manager.confirm_url, "%s?oauth_token=%s" % \
+        self.assertEqual(oauth_manager.confirm_url, "%s?oauth_token=%s" % \
                           (oauth_manager._authorize_url, oauth_manager._tmp_token_key))
 
         pin = json.loads(requests.get(oauth_manager.confirm_url,
@@ -966,17 +966,17 @@ class AuthManagersTestCase(BaseTestCase):
         oauth_manager.verify(pin)
 
 
-        self.assertEquals(oauth_manager.state, 5)
-        self.assertEquals(pin, oauth_manager._verifier)
-        self.assertEquals(tmp_token_key, oauth_manager._tmp_token_key)
-        self.assertEquals(tmp_token_secret, oauth_manager._tmp_token_secret)
+        self.assertEqual(oauth_manager.state, 5)
+        self.assertEqual(pin, oauth_manager._verifier)
+        self.assertEqual(tmp_token_key, oauth_manager._tmp_token_key)
+        self.assertEqual(tmp_token_secret, oauth_manager._tmp_token_secret)
 
         oauth_manager.access_request()
 
         self.assertTrue(isinstance(oauth_manager._token, OAuthToken))
-        self.assertEquals(oauth_manager._token._key, token_key)
-        self.assertEquals(oauth_manager._token._secret, token_secret)
-        self.assertEquals(oauth_manager.state, 7)
+        self.assertEqual(oauth_manager._token._key, token_key)
+        self.assertEqual(oauth_manager._token._secret, token_secret)
+        self.assertEqual(oauth_manager.state, 7)
         ## opener, body_output, headers_output = r.build_opener(r._build_url())
         ## oauth_manager.setup(opener)
         ## opener.perform()
@@ -998,7 +998,7 @@ class AuthManagersTestCase(BaseTestCase):
         tmp_token_key = "kfwbehlfbqlihrbwf"
         tmp_token_secret = "dlewknfd3jkr4nbfklb5ihrlbfg"
 
-        verifier = ''.join(map(str, [randint(1, 40) for x in xrange(7)]))
+        verifier = ''.join(map(str, [randint(1, 40) for x in range(7)]))
 
         request_token_url = build_url("oauth/1.0/request_token/%s/%s/%s/%s" % \
                              (consumer_key, consumer_secret, tmp_token_key, tmp_token_secret))
@@ -1024,12 +1024,12 @@ class AuthManagersTestCase(BaseTestCase):
                          auth=oauth_manager
                          )
 
-        self.assertEquals(oauth_manager.state, 7)
+        self.assertEqual(oauth_manager.state, 7)
         self.assertTrue(isinstance(oauth_manager._signature_method, SignatureMethod_HMAC_SHA1))
 
 #        self.assertEquals(oauth_manager._debug, stdout_debug)
-        self.assertEquals(r.status_code, 200)
-        self.assertEquals(json.loads(r.content)['success'], True)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(json.loads(r.content)['success'], True)
 
 
 
@@ -1048,13 +1048,13 @@ class AsyncTestCase(BaseTestCase):
     def test_AsyncClient_core(self):
         async_client = AsyncClient(size=20)
 
-        self.assertEquals(async_client._num_conn, 20)
-        self.assertEquals(async_client._remaining, 0)
-        self.assertEquals(async_client.success_callback, None)
-        self.assertEquals(async_client.fail_callback, None)
-        self.assertEquals(async_client._openers_pool, None)
-        self.assertEquals(async_client._data_queue, [])
-        self.assertEquals(async_client.connections_count, 0)
+        self.assertEqual(async_client._num_conn, 20)
+        self.assertEqual(async_client._remaining, 0)
+        self.assertEqual(async_client.success_callback, None)
+        self.assertEqual(async_client.fail_callback, None)
+        self.assertEqual(async_client._openers_pool, None)
+        self.assertEqual(async_client._data_queue, [])
+        self.assertEqual(async_client.connections_count, 0)
 
         async_client.add_handler(url=build_url("/get"),
                                  method="get",
@@ -1062,7 +1062,7 @@ class AsyncTestCase(BaseTestCase):
                                          "get2": "get2 value"},
                                  success_callback=self.success_callback,
                                  fail_callback=self.fail_callback)
-        self.assertEquals(len(async_client._data_queue), 1)
+        self.assertEqual(len(async_client._data_queue), 1)
         self.assertTrue(isinstance(async_client._data_queue[0], dict))
 
         params = self.random_dict(10)
@@ -1071,8 +1071,8 @@ class AsyncTestCase(BaseTestCase):
                          success_callback=self.success_callback,
                          fail_callback=self.fail_callback)
         self.assertTrue(isinstance(async_client._data_queue[1], dict))
-        self.assertEquals(async_client._data_queue[1]['params'], params)
-        self.assertEquals(async_client.connections_count, 2)
+        self.assertEqual(async_client._data_queue[1]['params'], params)
+        self.assertEqual(async_client.connections_count, 2)
 
     def test_async_get(self):
         async_client_global = AsyncClient(success_callback=self.success_callback,
@@ -1081,25 +1081,25 @@ class AsyncTestCase(BaseTestCase):
         params = self.random_dict(10)
         url = build_url("get")
 
-        self.assertEquals(async_client_global.get(url, params=params), async_client_global)
-        self.assertEquals(len(async_client_global._data_queue), 1)
+        self.assertEqual(async_client_global.get(url, params=params), async_client_global)
+        self.assertEqual(len(async_client_global._data_queue), 1)
 
         # Test process_func
         def process_func(num_processed, remaining, num_urls,
                          success_len, error_len):
             print("\nProcess {0} {1} {2} {3} {4}".format(num_processed, remaining, num_urls,
                                                          success_len, error_len))
-            self.assertEquals(num_urls, 2)
+            self.assertEqual(num_urls, 2)
 
         def fail_callback(request, errno, errmsg, async_client, opener):
             self.assertTrue(isinstance(request, Request))
             self.assertTrue(isinstance(async_client, AsyncClient))
-            self.assertEquals(async_client, async_client_global)
-            self.assertEquals(errno, 6)
-            self.assertEquals(errmsg, "Couldn't resolve host '{0}'".format(request.url[7:]))
+            self.assertEqual(async_client, async_client_global)
+            self.assertEqual(errno, 6)
+            self.assertEqual(errmsg, "Couldn't resolve host '{0}'".format(request.url[7:]))
         async_client_global.get("http://fwbefrubfbrfybghbfb4gbyvrv.com", params=params,
                                 fail_callback=fail_callback)
-        self.assertEquals(len(async_client_global._data_queue), 2)
+        self.assertEqual(len(async_client_global._data_queue), 2)
         async_client_global.start(process_func)
 
     def test_setup_opener(self):
@@ -1110,9 +1110,9 @@ class AsyncTestCase(BaseTestCase):
         data['method'] = 'get'
         opener = async_client.get_opener()
 
-        self.assertEquals(getattr(opener, 'success_callback', None), None)
-        self.assertEquals(getattr(opener, 'fail_callback', None), None)
-        self.assertEquals(getattr(opener, 'request', None), None)
+        self.assertEqual(getattr(opener, 'success_callback', None), None)
+        self.assertEqual(getattr(opener, 'fail_callback', None), None)
+        self.assertEqual(getattr(opener, 'request', None), None)
 
         data['success_callback'] = lambda **kwargs: kwargs
         data['fail_callback'] = lambda **kwargs: kwargs
@@ -1134,14 +1134,14 @@ class AsyncTestCase(BaseTestCase):
         data['fail_callback'] = lambda **kwargs: kwargs
 
         async_client.add_handler(**data)
-        self.assertEquals(async_client._data_queue[0], data)
-        self.assertEquals(async_client._num_urls, 1)
-        self.assertEquals(async_client._remaining, 1)
+        self.assertEqual(async_client._data_queue[0], data)
+        self.assertEqual(async_client._num_urls, 1)
+        self.assertEqual(async_client._remaining, 1)
 
     def test_get_opener(self):
         async_client = AsyncClient()
         opener = async_client.get_opener()
-        self.assertEquals(opener.fp, None)
+        self.assertEqual(opener.fp, None)
         self.assertNotEqual(opener, None)
 
 
@@ -1152,25 +1152,25 @@ class AsyncTestCase(BaseTestCase):
             params = self.random_dict(10)
             url = build_url("get")
 
-            self.assertEquals(async_client_global.get(url, params=params), async_client_global)
-            self.assertEquals(len(async_client_global._data_queue), 1)
+            self.assertEqual(async_client_global.get(url, params=params), async_client_global)
+            self.assertEqual(len(async_client_global._data_queue), 1)
 
             # Test process_func
             def process_func(num_processed, remaining, num_urls,
                              success_len, error_len):
                 print("\nProcess {0} {1} {2} {3} {4}".format(num_processed, remaining, num_urls,
                                                              success_len, error_len))
-                self.assertEquals(num_urls, 2)
+                self.assertEqual(num_urls, 2)
 
             def fail_callback(request, errno, errmsg, async_client, opener):
                 self.assertTrue(isinstance(request, Request))
                 self.assertTrue(isinstance(async_client, AsyncClient))
-                self.assertEquals(async_client, async_client_global)
-                self.assertEquals(errno, 6)
-                self.assertEquals(errmsg, "Couldn't resolve host '{0}'".format(request.url[7:]))
+                self.assertEqual(async_client, async_client_global)
+                self.assertEqual(errno, 6)
+                self.assertEqual(errmsg, "Couldn't resolve host '{0}'".format(request.url[7:]))
             async_client_global.get("http://fwbefrubfbrfybghbfb4gbyvrv.com", params=params,
                                     fail_callback=fail_callback)
-            self.assertEquals(len(async_client_global._data_queue), 2)
+            self.assertEqual(len(async_client_global._data_queue), 2)
 
 
 def suite():

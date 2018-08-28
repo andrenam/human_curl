@@ -10,7 +10,7 @@ Exceptions module for cURL for Humans
 :license: BSD, see LICENSE for more details.
 """
 
-from httplib import responses
+from http.client import responses
 
 __all__ = ("HTTPError", "InvalidMethod", "CurlError", "InterfaceError")
 

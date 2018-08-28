@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding:  utf-8 -*-
 
-from urlparse import urljoin
+from urllib.parse import urljoin
 from datetime import datetime
 
 from human_curl.async import AsyncClient

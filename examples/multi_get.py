@@ -1,6 +1,6 @@
 #http://rarestblog.com/py/multi_get.py.txt
 
-import cStringIO
+import io
 import sys
 
 try:
@@ -42,9 +42,9 @@ def multi_get(wf, urls, debug = 0, num_conn = 100, timeout = 5,
         ua = 'multi_get'
     queue = []
 
-    wf_keys = dict.fromkeys(wf.keys(),1)
+    wf_keys = dict.fromkeys(list(wf.keys()),1)
 
-    for url in dict.fromkeys(urls).keys():
+    for url in list(dict.fromkeys(urls).keys()):
         url = url.strip()
         if len(url)>250:
             wf[url]='---'
@@ -86,7 +86,7 @@ def multi_get(wf, urls, debug = 0, num_conn = 100, timeout = 5,
         if ref: c.setopt(pycurl.REFERER, ref)
         m.handles.append(c)
 
-    from UserString import MutableString
+    from collections import MutableString
 
     freelist = m.handles[:]
     num_processed = 0
@@ -97,10 +97,10 @@ def multi_get(wf, urls, debug = 0, num_conn = 100, timeout = 5,
             url, filename = queue.pop(0)
             if '.pdf' not in url:
                 c = freelist.pop()
-                if type(url)==type(u''):
+                if type(url)==type(''):
                     url=url.encode('utf8', 'replace')
                 c.setopt(pycurl.URL, url)
-                c.res = cStringIO.StringIO()
+                c.res = io.StringIO()
                 c.setopt(pycurl.WRITEFUNCTION, c.res.write)
                 if ref_dict is not None:
                     if ref_dict.get(url, ''):
@@ -152,14 +152,14 @@ def multi_get(wf, urls, debug = 0, num_conn = 100, timeout = 5,
     m.close()
 
 if __name__ == '__main__':
-    import time, urllib, cjson
+    import time, urllib.request, urllib.parse, urllib.error, cjson
 
     urls = []
     for query in range(10):
         yql_query = "select * from search.web(%d) where query=\"%s\"" % (100, query)
-        url = 'http://query.yahooapis.com/v1/public/yql?q=%s&format=json' % urllib.urlencode({'':yql_query})[1:]
+        url = 'http://query.yahooapis.com/v1/public/yql?q=%s&format=json' % urllib.parse.urlencode({'':yql_query})[1:]
         try:
-            url_read = urllib.urlopen(url).read()
+            url_read = urllib.request.urlopen(url).read()
             urls += list([i['url'] for i in cjson.decode(url_read)['query']['results']['result']])
         except: pass
 
