@@ -19,18 +19,14 @@ try:
 except ImportError:
     import pycurl
 import random
-from urllib2 import parse_http_list
+from urllib.request import parse_http_list
 from logging import getLogger
 from http.cookies import Morsel
 from string import capwords
 from os.path import exists as file_exists
 from http.cookiejar import CookieJar, Cookie
-from types import FileType
+from io import IOBase
 
-try:
-    bytes
-except Exception:
-    bytes = str
 
 try:
     from urllib.parse import parse_qs
@@ -300,13 +296,13 @@ def make_curl_post_files(data):
     for k, v in iterator:
         if isinstance(v, tuple):
             for k2 in v:
-                if isinstance(k2, FileType):
+                if isinstance(k2, IOBase):
                     result.append((k, checker(k2.name)))
                 elif isinstance(k2, basestring):
                     result.append((k, checker(k2)))
                 else:
                     raise RuntimeError("File %s doesn't exist" % v)
-        elif isinstance(v, FileType):
+        elif isinstance(v, IOBase):
             result.append((k, checker(str(v.name))))
         elif isinstance(v, basestring):
             result.append((k, checker(str(v))))

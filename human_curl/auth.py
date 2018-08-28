@@ -296,7 +296,7 @@ class OAuthManager(AuthManager):
             self._signature_method = signature_method
         elif signature_method is None:
             self._signature_method = SignatureMethod_PLAINTEXT()
-        elif isinstance(signature_method, basestring):
+        elif isinstance(signature_method, str):
             if signature_method.upper() in list(self.SIGNATURES_METHODS.keys()):
                 self._signature_method = self.SIGNATURES_METHODS[signature_method.upper()]()
             else:

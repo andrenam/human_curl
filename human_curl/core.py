@@ -36,7 +36,7 @@ from .utils import (decode_gzip, CaseInsensitiveDict, to_cookiejar,
                     to_unicode, logger_debug, urlnoencode)
 
 
-from io import StringIO
+from io import BytesIO
 
 try:
     import platform
@@ -179,7 +179,7 @@ class Request(object):
         - `options`: (tuple, list) low level pycurl options using
         """
         self._url = url
-        if not method or not isinstance(method, basestring):
+        if not method or not isinstance(method, str):
             raise InterfaceError("method argument must be string")
 
         if method.upper() not in self.SUPPORTED_METHODS:
@@ -199,7 +199,7 @@ class Request(object):
         self._params = data_wrapper(params)
 
         # String, dict, tuple, list
-        if isinstance(data, (basestring, NoneType)):
+        if isinstance(data, str) or data is None:
             self._data = data
         else:
             self._data = data_wrapper(data)
@@ -211,7 +211,7 @@ class Request(object):
         else:
             self._cookies = None
 
-        if isinstance(proxy, NoneType):
+        if proxy is None:
             self._proxy = proxy
         elif isinstance(proxy, tuple):
             if len(proxy) != 2 or not isinstance(proxy[1], tuple):
@@ -219,7 +219,7 @@ class Request(object):
             else:
                 self._proxy = proxy
 
-        if not isinstance(network_interface, (basestring, NoneType)):
+        if not isinstance(network_interface, str) and network_interface is not None:
             raise InterfaceError("Network interface argument must be string or None")
 
         self._network_interface = network_interface
@@ -261,8 +261,8 @@ class Request(object):
 
         self._curl = None
 
-        self.body_output = StringIO()
-        self.headers_output = StringIO()
+        self.body_output = BytesIO()
+        self.headers_output = BytesIO()
 
         self._netrc = netrc
         self._netrc_file = None
@@ -295,7 +295,7 @@ class Request(object):
         scheme, netloc, path, params, query, fragment = urlparse(self._url)
 
         # IDN domains support
-        netloc = to_unicode(netloc).encode('idna')
+        netloc = to_unicode(netloc)#.encode('idna')
 
         if not netloc:
             raise ValueError("Invalid url")
@@ -308,7 +308,7 @@ class Request(object):
                 if isinstance(value, tuple):
                     for i in value:
                         tmp.append((param, i))
-                elif isinstance(value, basestring):
+                elif isinstance(value, str):
                     tmp.append((param, value))
 
         if tmp:
@@ -333,7 +333,7 @@ class Request(object):
 
         del tmp
 
-        self._url = urlunparse([scheme, netloc, path, params, query, fragment])
+        self._url = urlunparse([str(p) for p in (scheme, netloc, path, params, query, fragment)])
 
         return self._url
 
@@ -349,7 +349,7 @@ class Request(object):
             # if close before getinfo, raises pycurl.error can't invote getinfo()
             # opener.close()
         except pycurl.error as e:
-            raise CurlError(e[0], e[1])
+            raise CurlError(e.args[0], e.args[1])
         else:
             self.response = self.make_response()
 
@@ -374,8 +374,8 @@ class Request(object):
         """Setup headers and body writers
 
         :param opener: :class:`pycurl.Curl` object
-        :param headers_writer: `StringIO` object
-        :param body_writer: `StringIO` object
+        :param headers_writer: `BytesIO` object
+        :param body_writer: `BytesIO` object
         """
         # Body and header writers
         opener.setopt(pycurl.HEADERFUNCTION, headers_writer)
@@ -408,7 +408,7 @@ class Request(object):
         """Compile pycurl.Curl instance
 
         Compile `pycurl.Curl` instance with given instance settings
-        and return `pycurl.Curl` configured instance, StringIO instances
+        and return `pycurl.Curl` configured instance, BytesIO instances
         of body_output and headers_output
 
         :param url: resource url
@@ -578,10 +578,10 @@ class Request(object):
                     post_params.extend(data_wrapper(self._data))
                 opener.setopt(opener.HTTPPOST, post_params)
             else:
-                if isinstance(self._data, basestring):
+                if isinstance(self._data, str):
                     logger.debug(("self._data is string"))
                     logger.debug(("self._data", self._data))
-                    request_buffer = StringIO(self._data)
+                    request_buffer = BytesIO(self._data)
 
                     # raw data for body request
                     opener.setopt(pycurl.READFUNCTION, request_buffer.read)
@@ -612,8 +612,8 @@ class Request(object):
                 opener.setopt(key, value)
 
 
-        self.body_output = StringIO()
-        self.headers_output = StringIO()
+        self.body_output = BytesIO()
+        self.headers_output = BytesIO()
 
         self.setup_writers(opener, self.headers_output.write, self.body_output.write)
 
@@ -632,8 +632,8 @@ class Response(object):
         Arguments:
         :param url: resource url
         :param curl_opener: :class:`pycurl.Curl` object
-        :param body_output: :StringIO instance
-        :param headers_output: :StringIO instance
+        :param body_output: :BytesIO instance
+        :param headers_output: :BytesIO instance
         :param request: :class:`Request` instance
         :param cookies_jar: :class:`CookieJar` instance
         """
@@ -661,9 +661,9 @@ class Response(object):
         self.request_time = None
         self._curl_opener = curl_opener
 
-        # StringIO object for response body
+        # BytesIO object for response body
         self._body_otput = body_output
-        # StringIO object for response headers
+        # BytesIO object for response headers
         self._headers_output = headers_output
 
         # :Response status code
@@ -760,7 +760,7 @@ class Response(object):
     def _split_headers_blocks(raw_headers):
         i = 0
         blocks = []
-        for item in raw_headers.strip().split("\r\n"):
+        for item in raw_headers.decode().strip().split("\r\n"):
             if item.startswith("HTTP"):
                 blocks.append([item])
                 i = len(blocks) - 1

@@ -100,7 +100,7 @@ def multi_get(wf, urls, debug = 0, num_conn = 100, timeout = 5,
                 if type(url)==type(''):
                     url=url.encode('utf8', 'replace')
                 c.setopt(pycurl.URL, url)
-                c.res = io.StringIO()
+                c.res = io.BytesIO()
                 c.setopt(pycurl.WRITEFUNCTION, c.res.write)
                 if ref_dict is not None:
                     if ref_dict.get(url, ''):
