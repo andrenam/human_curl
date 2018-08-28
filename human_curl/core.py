@@ -711,6 +711,10 @@ class Response(object):
         return self._request
 
     @property
+    def raw(self):
+        return BytesIO(self.content)
+
+    @property
     def url(self):
         if not self._url:
             self._get_curl_info()
