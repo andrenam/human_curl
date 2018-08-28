@@ -20,8 +20,7 @@ from urllib.parse import urlencode, quote_plus
 from http.cookiejar import CookieJar
 from itertools import chain
 from urllib.parse import urlparse, urljoin, urlunparse, parse_qsl
-from types import (StringTypes, TupleType, DictType, NoneType,
-                   ListType, FunctionType)
+from types import FunctionType
 
 try:
     import pycurl2 as pycurl
@@ -180,7 +179,7 @@ class Request(object):
         - `options`: (tuple, list) low level pycurl options using
         """
         self._url = url
-        if not method or not isinstance(method, StringTypes):
+        if not method or not isinstance(method, basestring):
             raise InterfaceError("method argument must be string")
 
         if method.upper() not in self.SUPPORTED_METHODS:
@@ -200,34 +199,34 @@ class Request(object):
         self._params = data_wrapper(params)
 
         # String, dict, tuple, list
-        if isinstance(data, (StringTypes, NoneType)):
+        if isinstance(data, (basestring, NoneType)):
             self._data = data
         else:
             self._data = data_wrapper(data)
 
         if isinstance(cookies, CookieJar):
             self._cookies = cookies
-        elif isinstance(cookies, (TupleType, DictType)):
+        elif isinstance(cookies, (tuple, dict)):
             self._cookies = to_cookiejar(cookies)
         else:
             self._cookies = None
 
         if isinstance(proxy, NoneType):
             self._proxy = proxy
-        elif isinstance(proxy, TupleType):
-            if len(proxy) != 2 or not isinstance(proxy[1], TupleType):
+        elif isinstance(proxy, tuple):
+            if len(proxy) != 2 or not isinstance(proxy[1], tuple):
                 raise InterfaceError('Proxy must be a tuple object')
             else:
                 self._proxy = proxy
 
-        if not isinstance(network_interface, (StringTypes, NoneType)):
+        if not isinstance(network_interface, (basestring, NoneType)):
             raise InterfaceError("Network interface argument must be string or None")
 
         self._network_interface = network_interface
 
         if isinstance(auth, AuthManager):
             self._auth = auth
-        elif isinstance(auth, TupleType):
+        elif isinstance(auth, tuple):
             self._auth = BasicAuth(*auth)
         elif auth is None:
             self._auth = None
@@ -255,10 +254,10 @@ class Request(object):
 
         if options is None:
             self._options = None
-        elif isinstance(options, (ListType, TupleType)):
+        elif isinstance(options, (list, tuple)):
             self._options = data_wrapper(options)
         else:
-            raise InterfaceError("options must be None, ListType or TupleType")
+            raise InterfaceError("options must be None, list or tuple")
 
         self._curl = None
 
@@ -306,10 +305,10 @@ class Request(object):
         tmp = []
         if self._params is not None:
             for param, value in self._params:
-                if isinstance(value, TupleType):
+                if isinstance(value, tuple):
                     for i in value:
                         tmp.append((param, i))
-                elif isinstance(value, StringTypes):
+                elif isinstance(value, basestring):
                     tmp.append((param, value))
 
         if tmp:
@@ -575,11 +574,11 @@ class Request(object):
         if self._method in ("POST", "PUT"):
             if self._files is not None:
                 post_params = self._files
-                if isinstance(self._data, (TupleType, ListType, DictType)):
+                if isinstance(self._data, (tuple, list, dict)):
                     post_params.extend(data_wrapper(self._data))
                 opener.setopt(opener.HTTPPOST, post_params)
             else:
-                if isinstance(self._data, StringTypes):
+                if isinstance(self._data, basestring):
                     logger.debug(("self._data is string"))
                     logger.debug(("self._data", self._data))
                     request_buffer = StringIO(self._data)
@@ -598,7 +597,7 @@ class Request(object):
                     else:
                         opener.setopt(pycurl.POST, True)
                         opener.setopt(pycurl.POSTFIELDSIZE, len(self._data))
-                elif isinstance(self._data, (TupleType, ListType, DictType)):
+                elif isinstance(self._data, (tuple, list, dict)):
                     headers = dict(self._headers or [])
                     if 'multipart' in headers.get('Content-Type', ''):
                         # use multipart/form-data;
@@ -608,7 +607,7 @@ class Request(object):
                         encoded_data = urlencode(self._data, doseq=True)
                         opener.setopt(pycurl.POSTFIELDS, encoded_data)
 
-        if isinstance(self._options, (TupleType, ListType)):
+        if isinstance(self._options, (tuple, list)):
             for key, value in self._options:
                 opener.setopt(key, value)
 
@@ -653,7 +652,7 @@ class Response(object):
         self._cookies = None
         if isinstance(cookies, CookieJar):
             self._cookies_jar = cookies
-        elif isinstance(cookies, (TupleType, DictType)):
+        elif isinstance(cookies, (tuple, dict)):
             self._cookies_jar = to_cookiejar(cookies)
         else:
             self._cookies_jar = None

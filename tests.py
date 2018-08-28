@@ -24,7 +24,7 @@ import logging
 from urllib.parse import urljoin
 import unittest
 import urllib.request, urllib.parse, urllib.error
-from types import TupleType, ListType, FunctionType, DictType
+from types import FunctionType
 from urllib.parse import urlencode
 
 from . import human_curl as requests
@@ -412,7 +412,7 @@ class RequestsTestCase(BaseTestCase):
                                     urlencode(((random_key, random_value1), (random_key, random_value2)))), r.url)
 
         json_response = json.loads(r.content)
-        self.assertTrue(isinstance(r.json, (dict, DictType)))
+        self.assertTrue(isinstance(r.json, (dict, dict)))
         self.assertEqual(json_response, r.json)
         self.assertTrue(random_value1 in r.json['args'][random_key])
         self.assertTrue(random_value2 in r.json['args'][random_key])
@@ -604,8 +604,8 @@ class UtilsTestCase(BaseTestCase):
         curl_files_dict = make_curl_post_files(test_files)
 
         for k, v in curl_files_dict:
-            if isinstance(v, (TupleType, ListType)):
-                self.assertTrue(isinstance(v, (TupleType, ListType)))
+            if isinstance(v, (tuple, list)):
+                self.assertTrue(isinstance(v, (tuple, list)))
                 self.assertTrue(os.path.exists(v[1]))
                 self.assertEqual(v[0], pycurl.FORM_FILE)
             else:
