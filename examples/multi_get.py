@@ -62,10 +62,10 @@ def multi_get(wf, urls, debug = 0, num_conn = 100, timeout = 5,
     num_conn = min(num_conn, num_urls)
     assert 1 <= num_conn <= 10000, "invalid number of concurrent connections"
     if debug:
-        print "PycURL %s (compiled against 0x%x)" % (pycurl.version, pycurl.COMPILE_LIBCURL_VERSION_NUM)
+        print("PycURL %s (compiled against 0x%x)" % (pycurl.version, pycurl.COMPILE_LIBCURL_VERSION_NUM))
 
     if debug:
-        print "----- Getting", num_urls, "URLs using", num_conn, "connections -----"
+        print("----- Getting", num_urls, "URLs using", num_conn, "connections -----")
 
     m = pycurl.CurlMulti()
     m.handles = []
@@ -129,7 +129,7 @@ def multi_get(wf, urls, debug = 0, num_conn = 100, timeout = 5,
                 wf[c.url]=text
 
                 try:
-                    if debug: print "[ ok] %5s %40s" % (c.filename, c.url[:40])
+                    if debug: print("[ ok] %5s %40s" % (c.filename, c.url[:40]))
                 except:
                     pass
 
@@ -137,7 +137,7 @@ def multi_get(wf, urls, debug = 0, num_conn = 100, timeout = 5,
             for c, errno, errmsg in err_list:
                 c.fp = None
                 m.remove_handle(c)
-                if debug: print "[err] %5s %40s" % (c.filename, c.url[:40])
+                if debug: print("[err] %5s %40s" % (c.filename, c.url[:40]))
                 wf[c.url]='---'
                 freelist.append(c)
             num_processed = num_processed + len(ok_list) + len(err_list)
@@ -163,12 +163,12 @@ if __name__ == '__main__':
             urls += list([i['url'] for i in cjson.decode(url_read)['query']['results']['result']])
         except: pass
 
-    print urls
+    print(urls)
     urls = reduce_by_domain(urls)
-    print "%d URLs" % len(urls)
+    print("%d URLs" % len(urls))
 
     res = {}
     import time
     tt = time.time()
     multi_get(res, urls, num_conn = 300, percentile = 80)
-    print len(urls)/(time.time()-tt), 'urls per second'
+    print(len(urls)/(time.time()-tt), 'urls per second')

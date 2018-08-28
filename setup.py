@@ -49,7 +49,7 @@ class run_audit(Command):
         try:
             import pyflakes.scripts.pyflakes as flakes
         except ImportError:
-            print "Audit requires PyFlakes installed in your system."""
+            print("Audit requires PyFlakes installed in your system.")
             sys.exit(-1)
 
         dirs = ['human_curl']
