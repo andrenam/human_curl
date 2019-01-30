@@ -214,8 +214,8 @@ class Request(object):
         if proxy is None:
             self._proxy = proxy
         elif isinstance(proxy, tuple):
-            if len(proxy) != 2 or not isinstance(proxy[1], tuple):
-                raise InterfaceError('Proxy must be a tuple object')
+            if (len(proxy) != 2 and len(proxy) != 3) or not isinstance(proxy[1], tuple):
+                raise InterfaceError('Proxy must be a tuple object of length 2 or 3')
             else:
                 self._proxy = proxy
 
@@ -387,9 +387,11 @@ class Request(object):
         :paramt opener: :class:`pycurl.Curl` object
         """
         if self._netrc:
+            logger.debug("set NETRC 1")
             opener.setopt(pycurl.NETRC, 1)
 
         if self._netrc_file and file_exists(self._netrc_file):
+            logger.debug("set NETRC_FILE %s" % self._netrc_file)
             opener.setopt(pycurl.NETRC_FILE, self._netrc_file)
 
 
@@ -480,12 +482,14 @@ class Request(object):
 
         # Setup proxy for request
         if self._proxy is not None:
-            logger.debug("Use proxies %s - %s" % self._proxy)
+            logger.debug("Use proxies %r" % (self._proxy,))
             if len(self._proxy) > 2:
                 proxy_type, proxy_addr, proxy_auth = self._proxy
+                logger.debug("Use proxy with auth %s, %s, %s" % (proxy_type, proxy_addr, proxy_auth))
             else:
                 proxy_type, proxy_addr = self._proxy
                 proxy_auth = None
+                logger.debug("Use proxy withouth auth %s, %s" % (proxy_type, proxy_addr))
 
             opener.setopt(pycurl.PROXY, proxy_addr[0])
             opener.setopt(pycurl.PROXYPORT, proxy_addr[1])
@@ -497,6 +501,9 @@ class Request(object):
             if proxy_auth:
                 if len(proxy_auth) == 2:
                     opener.setopt(pycurl.PROXYUSERPWD, "%s:%s" % proxy_auth)
+                    opener.setopt(pycurl.PROXYAUTH, pycurl.HTTPAUTH_ANY)
+                    logger.debug("set PROXYAUTH = HTTPAUTH_ANY")
+                    logger.debug("set auth %s, %s" % proxy_auth)
                 else:
                     raise InterfaceError("Proxy auth data must be tuple")
 
@@ -516,6 +523,7 @@ class Request(object):
             logger.debug("Use ca cert %s" % self._ca_certs)
             if file_exists(self._ca_certs):
                 opener.setopt(pycurl.CAINFO, self._ca_certs)
+                logger.debug("open ca cert file %s" % self._ca_certs)
 
         ## (HTTPS) Tells curl to use the specified certificate file when getting a
         ## file with HTTPS. The certificate must be in PEM format.
@@ -523,11 +531,14 @@ class Request(object):
         ## Note that this certificate is the private key and the private certificate concatenated!
         ## If this option is used several times, the last one will be used.
         if self._cert:
+            logger.debug("Use cert %s" % self._cert)
             opener.setopt(pycurl.SSLCERT, self._cert)
 
         if self._ip_v6:
+            logger.debug("ipresolve ip_v6")
             opener.setopt(pycurl.IPRESOLVE, pycurl.IPRESOLVE_WHATEVER)
         else:
+            logger.debug("ipresolve ip_v4")
             opener.setopt(pycurl.IPRESOLVE, pycurl.IPRESOLVE_V4)
 
         # opener.setopt(c.NOPROGRESS, 0)
@@ -549,6 +560,7 @@ class Request(object):
                 opener.setopt(pycurl.COOKIE, ''.join(chunks))
         else:
             # set empty cookie to activate cURL cookies
+            logger.debug("set empty cookie to activate cURL cookies")
             opener.setopt(pycurl.COOKIELIST, '')
 
         curl_options = {
@@ -609,6 +621,7 @@ class Request(object):
 
         if isinstance(self._options, (tuple, list)):
             for key, value in self._options:
+                logger.debug("set option %s=%s" % (key, value))
                 opener.setopt(key, value)
 
 
@@ -699,7 +712,7 @@ class Response(object):
             try:
                 field_data = self._curl_opener.getinfo(value)
             except Exception as e:
-                logger.warn(e)
+                #logger.warn(e)
                 continue
             else:
                 self._response_info[field] = field_data
@@ -803,7 +816,7 @@ class Response(object):
                     try:
                         version, code, message = HTTP_GENERAL_RESPONSE_HEADER.findall(header)[0]
                     except Exception as e:
-                        logger.warn(e)
+                        #logger.warn(e)
                         continue
                     else:
                         block_headers.append((version, code, message))
@@ -851,7 +864,8 @@ class Response(object):
                         if isinstance(self._cookies_jar, CookieJar):
                             self._cookies_jar.set_cookie(morsel_to_cookie(morsel))
                 except CookieError as e:
-                    logger.warn(e)
+                    #logger.warn(e)
+                    pass
         self._cookies = dict([(cookie.key, cookie.value) for cookie in cookies])
         return self._cookies
 
