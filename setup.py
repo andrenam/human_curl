@@ -90,7 +90,7 @@ setup(
     url="https://github.com/lispython/human_curl",
     packages=["human_curl"],
     install_requires=[
-        'pycurl==7.43.0'],
+        'pycurl'],
     tests_require=tests_require,
     license="BSD",
 #    test_suite="nose.collector",
