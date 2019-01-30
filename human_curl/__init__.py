@@ -55,4 +55,4 @@ def get_version():
 from .methods import get, put, head, post, delete, request, options
 from .core import Request, Response
 from .exceptions import CurlError, InterfaceError, InvalidMethod, AuthError
-from .async import AsyncClient, async_client
+from .async_ import AsyncClient, async_client
